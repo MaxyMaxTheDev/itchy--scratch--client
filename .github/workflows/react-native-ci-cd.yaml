@@ -1,6 +1,14 @@
 name: iPadOS Native Build
 
 on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
   workflow_dispatch:
     inputs:
       release:
@@ -100,6 +108,7 @@ jobs:
           path: artifacts/*.ipa
 
   create-release:
+    if: github.event_name == "workflow_dispatch" || github.event_name == "push"
     needs: build-ipados
     runs-on: ubuntu-latest
 
