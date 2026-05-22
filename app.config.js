@@ -1,6 +1,6 @@
 module.exports = {
   expo: {
-    name: "Itchy",
+    name: "ScratchyCat",
     slug: "itchy-native",
     version: "2.8.1",
     scheme: "itchy",
