@@ -1,24 +1,8 @@
-name: React Native CI/CD
+name: iPadOS Native Build
 
 on:
   workflow_dispatch:
     inputs:
-      buildType:
-        type: choice
-        description: "Build type to run"
-        options:
-          - prod-apk
-          - prod-aab
-          - ios-prod
-          - publish-stores
-          - all
-      platform:
-        type: choice
-        description: "What platform to build for"
-        options:
-          - ios
-          - android
-          - all
       release:
         type: choice
         description: "The GitHub Release type for this run"
@@ -27,31 +11,10 @@ on:
           - prerelease
           - release
 
-env:
-  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-  GOOGLE_PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
-  GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-  GOOGLE_SERVICES_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICES_PLIST_BASE64 }}
-  EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
-  EXPO_APPLE_PASSWORD: ${{ secrets.EXPO_APPLE_PASSWORD }}
-  EXPO_TEAM_ID: ${{ secrets.EXPO_TEAM_ID }}
-  NODE_OPTIONS: --openssl-legacy-provider
-
 jobs:
-  check-skip:
-    runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    steps:
-      - name: Skip CI check
-        run: echo "Proceeding with workflow"
+  build-ipados:
+    runs-on: macos-26
 
-  build:
-    needs: check-skip
-    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
-    strategy:
-      matrix:
-        platform: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.platform == 'all' && fromJSON('["android", "ios"]') || github.event.inputs.platform == 'android' && fromJSON('["android"]') || github.event.inputs.platform == 'ios' && fromJSON('["ios"]')) || fromJSON('["android", "ios"]') }}
-    runs-on: ${{ matrix.platform == 'ios' && 'macos-26' || 'ubuntu-latest' }}
     steps:
       - name: 🏗 Checkout repository
         uses: actions/checkout@v4
@@ -62,90 +25,88 @@ jobs:
           node-version: "24"
           cache: "npm"
 
-      - name: 📦 Install dependencies
-        run: |
-          npm install
-          npm install -g eas-cli@latest
+      - name: 📦 Install JS dependencies
+        run: npm install
 
-      - name: 🔄 Verify EAS CLI installation
+      - name: ✅ Validate native iOS project exists
         run: |
-          echo "EAS CLI version:"
-          eas --version
+          if [ ! -d "ios" ]; then
+            echo "Missing ./ios directory. This workflow is Expo-free and expects committed native iOS files."
+            echo "Generate and commit ios/ first, then rerun."
+            exit 1
+          fi
 
-      - name: ⏬️ Download Google Services configs
-        run: |
-          chmod +x ./utils/downloadGoogleServices.sh
-          bash ./utils/downloadGoogleServices.sh
-
-      - name: 📱 Build Production APK
-        if: (matrix.platform == 'android') && (github.event.inputs.buildType == 'all' || github.event.inputs.buildType == 'prod-apk' || github.event_name == 'push')
-        run: |
-          export NODE_OPTIONS="--openssl-legacy-provider --max_old_space_size=4096"
-           mkdir -p android_output
-          eas build --platform android --profile production-apk --local --non-interactive --output=./android_output/app-prod.apk
-        env:
-          NODE_ENV: production
-
-      - name: 📱 Build Production AAB
-        if: (matrix.platform == 'android') && (github.event.inputs.buildType == 'all' || github.event.inputs.buildType == 'prod-aab' || github.event_name == 'push')
-        run: |
-          export NODE_OPTIONS="--openssl-legacy-provider --max_old_space_size=4096"
-          mkdir -p android_output
-          eas build --platform android --profile production --local --non-interactive --output=./android_output/app-prod.aab
-        env:
-          NODE_ENV: production
-
-      - name: 📱 Build iOS Production
-        if: (matrix.platform == 'ios') && (github.event.inputs.buildType == 'all' || github.event.inputs.buildType == 'ios-prod' || github.event_name == 'push')
-        run: |
-          export NODE_OPTIONS="--openssl-legacy-provider --max_old_space_size=4096"
-          export EAS_PWD=$PWD
-          eas build --platform ios --profile production --local --non-interactive --output=./app-ios-prod.ipa
-        env:
-          NODE_ENV: production
-
-      - name: 🚀 Submit to Play Store
-        if: (matrix.platform == 'android') && (github.event.inputs.buildType == 'all' || github.event_name == 'push')
-        run: |
-          eas submit -p android --path ./android_output/app-prod.aab --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          GOOGLE_PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
-
-      - name: 🚀 Submit to App Store
-        if: (matrix.platform == 'ios') && (github.event.inputs.buildType == 'all' || github.event_name == 'push')
-        run: |
-          eas submit -p ios --path ./app-ios-prod.ipa --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
-          EXPO_APPLE_PASSWORD: ${{ secrets.EXPO_APPLE_PASSWORD }}
-          EXPO_TEAM_ID: ${{ secrets.EXPO_TEAM_ID }}
-
-      - name: ⬆️ Upload Android Artifacts
-        uses: actions/upload-artifact@v4
-        if: matrix.platform == 'android'
+      - name: 🍎 Setup Ruby and CocoaPods
+        uses: ruby/setup-ruby@v1
         with:
-          name: android-artifacts
-          path: |
-            ./android_output/*
+          ruby-version: "3.2"
+          bundler-cache: false
+
+      - name: 📦 Install iOS Pods
+        working-directory: ios
+        run: |
+          pod repo update
+          pod install
+
+      - name: 🔧 Build iPadOS IPA (native Xcode)
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+          CODE_SIGN_IDENTITY: ${{ secrets.IOS_CODE_SIGN_IDENTITY }}
+          PROVISIONING_PROFILE_SPECIFIER: ${{ secrets.IOS_PROVISIONING_PROFILE_SPECIFIER }}
+        run: |
+          set -e
+          mkdir -p build artifacts
+
+          xcodebuild \
+            -workspace ios/Itchy.xcworkspace \
+            -scheme Itchy \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/Itchy.xcarchive \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_SPECIFIER" \
+            clean archive
+
+          cat > ios/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>teamID</key>
+            <string>${DEVELOPMENT_TEAM}</string>
+            <key>compileBitcode</key>
+            <false/>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/Itchy.xcarchive \
+            -exportPath artifacts \
+            -exportOptionsPlist ios/ExportOptions.plist
 
       - name: ⬆️ Upload iOS Artifact
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'ios'
         with:
           name: ios-artifact
-          path: ./app-ios-prod.ipa
+          path: artifacts/*.ipa
 
   create-release:
-    needs: build
+    needs: build-ipados
     runs-on: ubuntu-latest
 
     steps:
       - name: 🏗 Checkout repository
         uses: actions/checkout@v4
 
-      # New Step: Generate the version info you were trying to use
       - name: 📝 Get version info
         id: build-info
         run: |
@@ -153,16 +114,8 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-      - name: ⬇️ Download Android Artifacts (if available)
+      - name: ⬇️ Download iOS Artifact
         uses: actions/download-artifact@v4
-        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android'
-        with:
-          name: android-artifacts
-          path: artifacts/android-artifacts
-
-      - name: ⬇️ Download iOS Artifacts (if available)
-        uses: actions/download-artifact@v4
-        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'ios'
         with:
           name: ios-artifact
           path: artifacts/ios-artifact
@@ -175,7 +128,6 @@ jobs:
           name: "Release v${{ steps.build-info.outputs.version }}-${{ steps.build-info.outputs.build_number }}"
           tag_name: "v${{ steps.build-info.outputs.version }}-${{ steps.build-info.outputs.build_number }}"
           files: |
-            artifacts/android-artifacts/*
             artifacts/ios-artifact/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

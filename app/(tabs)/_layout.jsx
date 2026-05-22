@@ -68,6 +68,20 @@ export default function TabLayout() {
                     }}
                 />
                 <Tabs.Screen
+                    name="editor"
+                    options={{
+                        title: 'Editor',
+                        tabBarIcon: () => require("../../assets/project.png"),
+                    }}
+                />
+                <Tabs.Screen
+                    name="mystuff"
+                    options={{
+                        title: 'My Stuff',
+                        tabBarIcon: () => require("../../assets/icons/settings.png"),
+                    }}
+                />
+                <Tabs.Screen
                     name="messages"
                     options={{
                         title: 'Messages',
