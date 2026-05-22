@@ -1,11 +1,11 @@
 module.exports = {
   expo: {
     name: "ScratchyCat",
-    slug: "itchy-native",
+    slug: "scratchycat-native",
     version: "2.8.1",
-    scheme: "itchy",
+    scheme: "scratchycat",
     newArchEnabled: true,
-    orientation: "default",
+    orientation: "landscape",
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
@@ -89,7 +89,7 @@ module.exports = {
     userInterfaceStyle: "automatic",
     android: {
       versionCode: 82,
-      package: "org.scratchclient4.itchy",
+      package: "org.bitforge.scratchycat",
       adaptiveIcon: {
         backgroundColor: "#0082FF",
         foregroundImage: "./assets/icon-foreground.png",
@@ -107,7 +107,7 @@ module.exports = {
       ],
     },
     ios: {
-      bundleIdentifier: "org.scratchclient4.itchy",
+      bundleIdentifier: "org.bitforge.scratchycat",
       buildNumber: "82",
       icon: "./assets/iosicon.icon",
       supportsTablet: true,
