@@ -72,6 +72,17 @@ jobs:
           echo "EAS CLI version:"
           eas --version
 
+      - name: ✅ Validate Expo auth token
+        run: |
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "EXPO_TOKEN is missing. Add it in GitHub: Settings > Secrets and variables > Actions > Repository secrets"
+            exit 1
+          fi
+
+      - name: 👤 Verify Expo account access
+        run: |
+          eas whoami
+          eas project:info
       - name: ⏬️ Download Google Services configs
         run: |
           chmod +x ./utils/downloadGoogleServices.sh
@@ -84,6 +95,7 @@ jobs:
            mkdir -p android_output
           eas build --platform android --profile production-apk --local --non-interactive --output=./android_output/app-prod.apk
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           NODE_ENV: production
 
       - name: 📱 Build Production AAB
@@ -93,6 +105,7 @@ jobs:
           mkdir -p android_output
           eas build --platform android --profile production --local --non-interactive --output=./android_output/app-prod.aab
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           NODE_ENV: production
 
       - name: 📱 Build iOS Production
@@ -102,6 +115,7 @@ jobs:
           export EAS_PWD=$PWD
           eas build --platform ios --profile production --local --non-interactive --output=./app-ios-prod.ipa
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           NODE_ENV: production
 
       - name: 🚀 Submit to Play Store
