@@ -191,6 +191,37 @@ const APIProject = {
     );
     return res.status === 200;
   },
+  shareProject: async (
+    id: string | number,
+    token: string,
+    csrf: string
+  ): Promise<boolean> => {
+    const opts = {
+      headers: {
+        "X-CSRFToken": csrf,
+        "X-Token": token,
+        "x-requested-with": "XMLHttpRequest",
+        Referer: `https://scratch.mit.edu/projects/${id}/editor`,
+        "User-Agent": consts.UserAgent,
+        Origin: "https://scratch.mit.edu",
+        Pragma: "no-cache",
+        "Cache-Control": "no-cache",
+      },
+      referrer: `https://scratch.mit.edu/projects/${id}/editor`,
+      method: "PUT",
+      body: JSON.stringify({ isPublished: true }),
+    };
+
+    const res = await fetch(
+      `https://api.scratch.mit.edu/proxy/projects/${id}/share`,
+      opts
+    );
+    if (!res.ok) {
+      throw new Error(`Share request failed with status ${res.status}`);
+    }
+    return true;
+  },
+
 };
 
 export default APIProject;

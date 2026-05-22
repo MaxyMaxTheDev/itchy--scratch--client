@@ -398,6 +398,15 @@ function ThemeConsumerInner({ twConfig }: ThemeConsumerInnerProps) {
           </Animated.View>
         </View>
       )}
+      <View
+        style={{
+          flex: 1,
+          width: "100%",
+          alignSelf: "center",
+          maxWidth: isTablet ? 1100 : "100%",
+          backgroundColor: colors.background,
+        }}
+      >
       <Stack
         screenOptions={{
           contentStyle: {
@@ -613,6 +622,7 @@ function ThemeConsumerInner({ twConfig }: ThemeConsumerInnerProps) {
           }}
         />
       </Stack>
+      </View>
     </View>
   );
 }
