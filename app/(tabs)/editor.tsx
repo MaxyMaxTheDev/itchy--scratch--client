@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Alert, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useIsTablet } from "utils/hooks/useIsTablet";
 import WebView from "react-native-webview";
 import { useMMKVObject, useMMKVString } from "react-native-mmkv";
 import { useTheme } from "../../utils/theme";
@@ -61,6 +63,8 @@ true;
 export default function EditorScreen() {
   const { colors } = useTheme();
   const [user] = useMMKVObject<UserData | null>("user");
+  const insets = useSafeAreaInsets();
+  const isTablet = useIsTablet();
   const [csrf] = useMMKVString("csrfToken");
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const webRef = useRef<WebView>(null);
@@ -100,8 +104,12 @@ export default function EditorScreen() {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
-          paddingHorizontal: 16,
-          paddingVertical: 10,
+          paddingHorizontal: isTablet ? 24 : 16,
+          paddingTop: insets.top + 8,
+          paddingBottom: 10,
+          width: "100%",
+          maxWidth: 1100,
+          alignSelf: "center",
         }}
       >
         <ItchyText style={{ color: colors.text, fontWeight: "700", fontSize: 18 }}>
@@ -121,6 +129,7 @@ export default function EditorScreen() {
           </ItchyText>
         </TouchableOpacity>
       </View>
+      <View style={{ flex: 1, width: "100%", maxWidth: 1100, alignSelf: "center" }}>
       <WebView
         ref={webRef}
         source={{ uri: editorUrl }}
@@ -136,6 +145,7 @@ export default function EditorScreen() {
           setCurrentProjectId(match?.[1] ?? null);
         }}
       />
+      </View>
     </View>
   );
 }

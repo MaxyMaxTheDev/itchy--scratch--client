@@ -1,5 +1,7 @@
 import { Stack } from "expo-router";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useIsTablet } from "utils/hooks/useIsTablet";
 import WebView from "react-native-webview";
 import { useTheme } from "../utils/theme";
 
@@ -18,10 +20,13 @@ const isBlockedScratchRootUrl = (rawUrl: string) => {
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const isTablet = useIsTablet();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: "Create Scratch Account" }} />
+      <View style={{ flex: 1, width: "100%", maxWidth: 1100, alignSelf: "center", paddingTop: isTablet ? insets.top : 0 }}>
       <WebView
         source={{ uri: "https://scratch.mit.edu/join" }}
         thirdPartyCookiesEnabled
@@ -31,6 +36,7 @@ export default function RegisterScreen() {
           !isBlockedScratchRootUrl(request.url)
         }
       />
+      </View>
     </View>
   );
 }
