@@ -8,7 +8,7 @@ import { useMemo, useRef, useState } from "react";
 import Card from "../components/Card";
 import storage from "../utils/storage";
 import { useMMKVObject } from "react-native-mmkv";
-import { router, Stack } from "expo-router";
+import { Link, router, Stack } from "expo-router";
 import { Image } from "expo-image";
 import encryptedStorage from "../utils/encryptedStorage";
 import TexturedButton from "../components/TexturedButton";
@@ -187,6 +187,26 @@ export default function LoginScreen() {
       >
         Log In
       </TexturedButton>
+
+      <Link href="/register" asChild>
+        <TexturedButton
+          icon="person-add"
+          iconSide="left"
+          style={{
+            marginTop: 8,
+            margin: "auto",
+            paddingHorizontal: 10,
+            backgroundColor: colors.backgroundSecondary,
+            outlineColor: colors.accentOverlay,
+            borderTopWidth: 0,
+            borderTopColor: "rgba(255,255,255,0.2)",
+          }}
+          textStyle={{ color: colors.text }}
+          size={13}
+        >
+          Create Account
+        </TexturedButton>
+      </Link>
       <Card
         onPress={() =>
           linkWithFallback("https://itchy.micahlindley.com/privacy")
