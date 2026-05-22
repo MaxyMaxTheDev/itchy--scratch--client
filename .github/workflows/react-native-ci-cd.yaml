@@ -28,8 +28,13 @@ jobs:
       - name: 📦 Install JS dependencies
         run: npm install
 
-      - name: 🧱 Generate native iOS project
-        run: npx expo prebuild --platform ios --non-interactive
+      - name: ✅ Validate native iOS project exists
+        run: |
+          if [ ! -d "ios" ]; then
+            echo "Missing ./ios directory. This workflow is Expo-free and expects committed native iOS files."
+            echo "Generate and commit ios/ first, then rerun."
+            exit 1
+          fi
 
       - name: 🍎 Setup Ruby and CocoaPods
         uses: ruby/setup-ruby@v1
